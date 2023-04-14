@@ -14,76 +14,8 @@ namespace IsoMetric2imperial
 {
     class Program
     {
-
-        /* [CommandMethod("thetest123", CommandFlags.Modal)]
-         public static void thetest() // This method can have any name
-         {
-             Helper.Initialize();
-             string configstr = "";
-
-             TypedValue[] filterlist = new TypedValue[1];
-             filterlist[0] = new TypedValue(0, "TEXT,MTEXT");
-             SelectionFilter thefilter = new SelectionFilter(filterlist);
-             PromptSelectionResult result = Helper.oEditor.SelectAll(thefilter);
-
-             using (Transaction t = Application.DocumentManager.MdiActiveDocument.Database.TransactionManager.StartTransaction())
-             {
-
-                 try
-                 {
-                     string text = "";
-                     foreach (var id in result.Value.GetObjectIds())
-                     {
-                         string type = id.ObjectClass.Name;
-                         if (type.Equals("AcDbMText"))
-                         {
-                             MText ent = (MText)t.GetObject(id, OpenMode.ForWrite);
-                             text = ent.Text;
-                         }
-                         else
-                         {
-                             DBText ent = (DBText)t.GetObject(id, OpenMode.ForWrite);
-                             text = ent.TextString;
-                         }
-
-                         //String pattern = @"(\d+')?-?(\d+[^/'\d])?(\d+/\d+)?[^/]?";
-                         string output = "";
-
-                         foreach (Match m in Regex.Matches(text, configstr))
-                         {
-                             int u = 0;
-                             foreach (var group in m.Groups)
-                             {
-                                 ++u;
-                                 foreach (Capture capture in m.Captures)
-                                 {
-                                     output += "found in " + type + " of handle: " + id.Handle + " at pos: " + capture.Index + ": " + capture.ToString() + " (in group: " + u + ") search term: " + configstr + " ,full text: " + text + "\n";
-                                 }
-                             }
-
-                         }
-                         Helper.oEditor.WriteMessage(output);
-                     }
-
-                 }
-                 catch (System.Exception e)
-                 {
-
-                     System.Diagnostics.StackTrace trace = new System.Diagnostics.StackTrace(e, true);
-                     Helper.oEditor.WriteMessage(trace.ToString());
-                     Helper.oEditor.WriteMessage("Line: " + trace.GetFrame(0).GetFileLineNumber());
-                     Helper.oEditor.WriteMessage("message: " + e.Message);
-
-                 }
-             }
-             Helper.Terminate();
-         }*/
-
-        public static string thenorth = "UpperLeft"; //UpperRight
-        public static string zdecline = "";
         public static string thepath = "";
         public static int precision = 4;
-        public static double AngleTolerance = 0.1;
         public static bool theErrorFlag = false;
         public static bool theChangeFlag = false;
         public static bool isImperial = false;
