@@ -15,7 +15,6 @@ namespace IsoMetric2imperial
     class Program
     {
         public static string thepath = "";
-        public static int precision = 4;
         public static bool theErrorFlag = false;
         public static bool theChangeFlag = false;
         public static bool isImperial = false;
@@ -100,7 +99,7 @@ namespace IsoMetric2imperial
 
                             string oidtext = adim.DimensionText;
 
-                            adim.DimensionText = MetricToImperial(oidtext);
+                            adim.DimensionText = MetricToImperial(oidtext, 4);
                         }
                         else if (id.ObjectClass.Name.Equals("AcDbMText"))
                         {
@@ -117,9 +116,9 @@ namespace IsoMetric2imperial
                                         Helper.CmdLineMessage("\nm.Groups[j].Value: " + m.Groups[j].Value);*/
                                     if (IsNumeric(m.Groups[3].Value) && IsNumeric(m.Groups[6].Value) && IsNumeric(m.Groups[9].Value))
                                     {
-                                        output = m.Groups[1].Value + m.Groups[2].Value + MetricToImperial(m.Groups[3].Value) +
-                                               m.Groups[4].Value + m.Groups[5].Value + MetricToImperial(m.Groups[6].Value) +
-                                               m.Groups[7].Value + m.Groups[8].Value + MetricToImperial(m.Groups[9].Value) +
+                                        output = m.Groups[1].Value + m.Groups[2].Value + MetricToImperial(m.Groups[3].Value, 4) +
+                                               m.Groups[4].Value + m.Groups[5].Value + MetricToImperial(m.Groups[6].Value, 4) +
+                                               m.Groups[7].Value + m.Groups[8].Value + MetricToImperial(m.Groups[9].Value, 4) +
                                                m.Groups[10].Value;
                                     }
                                     break;
@@ -127,6 +126,33 @@ namespace IsoMetric2imperial
                                 }
                             }
                             catch { }
+
+                            if (!output.Equals("")) text = output;
+
+                            try
+                            {
+                                String pattern = @"\A([\w\W\s]*)DN ?(\d{1,4})([\w\W\s]*)\z";
+                                foreach (Match m in Regex.Matches(text, pattern))
+                                {
+                                    output = m.Groups[1].Value + sizemap[m.Groups[2].Value] + "\" NS" + m.Groups[3].Value;                                    
+                                    break;
+                                }
+                            }
+                            catch { }
+
+                            if (!output.Equals("")) text = output;
+
+                            try
+                            {
+                                String pattern = @"\A([\w\W\s]*)(℄ El [\+-]{1})(\d+)([\w\W\s]*)\z";
+                                foreach (Match m in Regex.Matches(text, pattern))
+                                {
+                                    output = m.Groups[1].Value + m.Groups[2].Value + MetricToImperial(m.Groups[3].Value, 4) + m.Groups[4].Value;
+                                    break;
+                                }
+                            }
+                            catch { }
+
                             if (!output.Equals("")) { 
 
                                 ent.Contents = output;                            
@@ -227,7 +253,7 @@ namespace IsoMetric2imperial
                                                 if (sizemap.ContainsKey(theparts[j]))
                                                     newText += sizemap[theparts[j]] + "\"";
                                                 else
-                                                    newText += MetricToImperial(theparts[j].Trim());
+                                                    newText += MetricToImperial(theparts[j].Trim(), 4);
                                             }
 
                                             cell.Value = newText;
@@ -282,7 +308,7 @@ namespace IsoMetric2imperial
 
 
 
-        public static string MetricToImperial(string metric)
+        public static string MetricToImperial(string metric, int precision)
         {
             string imperial = "";
             if (!metric.Equals(""))
