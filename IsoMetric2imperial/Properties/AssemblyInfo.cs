@@ -33,5 +33,7 @@ using System.Runtime.InteropServices;
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
 //v1:changed to fit certain iso style (non-default)
-[assembly: AssemblyVersion("24.24.0.1")]
-[assembly: AssemblyFileVersion("24.24.0.1")]
+//v2:more changes, bug fixes
+//v3: elbow elevation-, DN labels- translation, precision argument for metric to imperial
+[assembly: AssemblyVersion("24.24.0.3")]
+[assembly: AssemblyFileVersion("24.24.0.3")]
