@@ -92,6 +92,8 @@ namespace IsoMetric2imperial
                     BlockTableRecord btr = (BlockTableRecord)t.GetObject(db.CurrentSpaceId, OpenMode.ForWrite);
                     foreach (ObjectId id in btr)
                     {
+                        //Helper.CmdLineMessage("\nclass: " + id.ObjectClass.Name);
+
                         if (id.ObjectClass.Name.Equals("AcDbRotatedDimension"))
                         { //todo: other dimensions like: AcDbAlignedDimension etc?
                             Dimension adim = (Dimension)t.GetObject(id, OpenMode.ForWrite);
@@ -103,29 +105,32 @@ namespace IsoMetric2imperial
                         else if (id.ObjectClass.Name.Equals("AcDbMText"))
                         {
                             MText ent = (MText)t.GetObject(id, OpenMode.ForWrite);
-  
+
                             string text = ent.Contents;
                             string output = "";
                             try
                             {
-                                //Helper.CmdLineMessage("\ntext: " + text);
                                 String pattern = @"\A([\w\W\s]*)(West |East )(-?\d+)(\s+|\\P)(North |South )(-?\d+)(\s+|\\P)(El \+?)(-?\d+)([\w\W\s]*)\z";
                                 foreach (Match m in Regex.Matches(text, pattern))
                                 {
                                     /*for (int j = 1; j < 10; j++)
                                         Helper.CmdLineMessage("\nm.Groups[j].Value: " + m.Groups[j].Value);*/
-                                    if (IsNumeric(m.Groups[3].Value) && IsNumeric(m.Groups[6].Value) && IsNumeric(m.Groups[9].Value)) { 
-                                    output = m.Groups[1].Value + m.Groups[2].Value + MetricToImperial(m.Groups[3].Value) +
-                                           m.Groups[4].Value + m.Groups[5].Value + MetricToImperial(m.Groups[6].Value) +
-                                           m.Groups[7].Value + m.Groups[8].Value + MetricToImperial(m.Groups[9].Value) +
-                                           m.Groups[10].Value;
-}
+                                    if (IsNumeric(m.Groups[3].Value) && IsNumeric(m.Groups[6].Value) && IsNumeric(m.Groups[9].Value))
+                                    {
+                                        output = m.Groups[1].Value + m.Groups[2].Value + MetricToImperial(m.Groups[3].Value) +
+                                               m.Groups[4].Value + m.Groups[5].Value + MetricToImperial(m.Groups[6].Value) +
+                                               m.Groups[7].Value + m.Groups[8].Value + MetricToImperial(m.Groups[9].Value) +
+                                               m.Groups[10].Value;
+                                    }
                                     break;
 
                                 }
                             }
                             catch { }
-                            if (!output.Equals("")) ent.Contents = output;
+                            if (!output.Equals("")) { 
+
+                                ent.Contents = output;                            
+                            }
 
                             //pattern linenumber?
                         }
@@ -140,59 +145,87 @@ namespace IsoMetric2imperial
                             int sizeColumnIndex = -1;
                             int cutpiecelengthIndex = -1;
                             int partcodeIndex = -1;
+                            int quantityIndex = -1;
+                            int headerrow = -1;
 
-
-                            for (int i = 0; i < table.Columns.Count; i++)
+                            for (int j = 0; j < table.Rows.Count; j++)
                             {
-                                //Helper.CmdLineMessage("\nstyle: " + table.Rows[1].Style);
-                                if (table.Cells[1, i].Value.ToString().Equals("Size", StringComparison.OrdinalIgnoreCase))
+                                if (!table.Rows[j].IsSingleCell)
                                 {
-                                    sizeColumnIndex = i;
-                                }
-                                else if (table.Cells[1, i].Value.ToString().Equals("Cut length", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    cutpiecelengthIndex = i;
-                                }
-                                else if (table.Cells[1, i].Value.ToString().Equals("Part Code", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    partcodeIndex = i;
+                                    for (int i = 0; i < table.Columns.Count; i++)
+                                    {
+
+                                        if (table.Cells[j, i].Value.ToString().Equals("Size", StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            sizeColumnIndex = i;
+                                            headerrow = j;
+                                            //Helper.CmdLineMessage("\nsizeColumnIndex found");
+                                        }
+                                        else if (table.Cells[j, i].Value.ToString().Equals("Qty", StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            quantityIndex = i;
+                                            //Helper.CmdLineMessage("\nquantityIndex found");
+                                        }
+                                        else if (table.Cells[j, i].Value.ToString().Equals("Cut length", StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            cutpiecelengthIndex = i;
+                                            //Helper.CmdLineMessage("\ncutpiecelengthIndex found");
+                                        }
+                                        else if (table.Cells[j, i].Value.ToString().Equals("Part Code", StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            partcodeIndex = i;
+                                        }
+                                    }
                                 }
                             }
 
-                            int[] colsToWorkon = { sizeColumnIndex, cutpiecelengthIndex };
+                            int[] colsToWorkon = { sizeColumnIndex, cutpiecelengthIndex, quantityIndex };
 
-                            for (int i = 2; i < table.Rows.Count; i++)
+                            for (int i = 0; i < table.Rows.Count; i++)
                             {
                                 //Helper.CmdLineMessage("\nstyle: " + table.Rows[i].Style);
-                                if (table.Rows[i].Style.Equals("_DATA") || table.Rows[i].Style.Equals("GroupTitle"))
+                                if (!table.Rows[i].IsSingleCell && i != headerrow)
                                 {
-                                    foreach (int col in colsToWorkon)
+                                    for (int k=0; k< colsToWorkon.Length; k++)
                                     {
-                                        if (col == -1) continue;
-                                        Cell cell = table.Cells[i, col];
+                                        if (colsToWorkon[k] == -1) continue;
+                                        Cell cell = table.Cells[i, colsToWorkon[k]];
 
                                         string existingText = cell.GetTextString(FormatOption.FormatOptionNone);
+
+                                        //Helper.CmdLineMessage("\ntablecell: " + existingText);
+
                                         string newText = "";
                                         bool exceptionflag = false;
+                                        if (k == 2) exceptionflag = true;
 
                                         if (partcodeIndex != -1)
                                         {
                                             string partcode = table.Cells[i, partcodeIndex].GetTextString(FormatOption.FormatOptionNone);
-                                            if (partcode.StartsWith("BH-") || partcode.StartsWith("BW-") || partcode.StartsWith("BN-") || partcode.StartsWith("GO-"))
+                                            if (partcode.StartsWith("BH-") || partcode.StartsWith("BW-") || partcode.StartsWith("BN-"))
                                             {
                                                 exceptionflag = true;
+                                            }
+                                            if (partcode.StartsWith("PP-"))
+                                            {
+                                                exceptionflag = false;
                                             }
                                         }
 
                                         if (!exceptionflag)
                                         {
-                                            existingText = existingText.Replace("mm", "");
-                                            string[] theparts = existingText.Split(new Char[] { 'X' });
+                                            string[] theparts = existingText.Split(new Char[] { 'X', '/' });
                                             for (int j = 0; j < theparts.Length; j++)
                                             {
-                                                if (j != 0) newText += "X";
-                                                if (sizemap.ContainsKey(existingText))
-                                                    newText = sizemap[existingText] + "\"";
+                                                if (j != 0)
+                                                {
+                                                    if (existingText.Contains("X"))
+                                                        newText += "X";
+                                                    else
+                                                        newText += "/";
+                                                }
+                                                if (sizemap.ContainsKey(theparts[j]))
+                                                    newText += sizemap[theparts[j]] + "\"";
                                                 else
                                                     newText += MetricToImperial(theparts[j].Trim());
                                             }
@@ -252,8 +285,23 @@ namespace IsoMetric2imperial
         public static string MetricToImperial(string metric)
         {
             string imperial = "";
-            if(!metric.Equals("") && IsNumeric(metric))
-                imperial = Converter.DistanceToString(Convert.ToDouble(metric) / 25.4, DistanceUnitFormat.Architectural, precision);
+            if (!metric.Equals(""))
+            {
+                double dmetric = 0.0;
+                metric = metric.Replace("mm", "");
+                if (metric.Contains("M"))
+                {
+                    metric = metric.Replace("M", "");
+                    if (IsNumeric(metric))
+                        dmetric = Convert.ToDouble(metric) * 1000;
+                }
+                else
+                {
+                    if (IsNumeric(metric))
+                        dmetric = Convert.ToDouble(metric);
+                }
+                imperial = Converter.DistanceToString(dmetric / 25.4, DistanceUnitFormat.Architectural, precision);
+            }
             return imperial;
         }
     }
